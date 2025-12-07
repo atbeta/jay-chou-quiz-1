@@ -8,7 +8,7 @@ let isAnswered = false;
 let audioPlayer = null;
 // 图片缓存对象，用于存储已预加载的图片
 let imageCache = {};
-let preloadComplete = false;
+// let preloadComplete = false;
 
 // DOM Elements
 const pages = {
@@ -44,69 +44,66 @@ const nicknameInputEl = document.getElementById('nickname-input');
 // Audio
 const bgmPlayer = document.getElementById('bgm-player');
 
-// 预加载所有图片
-function preloadImages() {
-    let loadedCount = 0;
-    const imageQuestions = questionBank.filter(q => q.type === 'image' && q.media);
+// 预加载所有图片 - 已禁用
+// function preloadImages() {
+//     let loadedCount = 0;
+//     const imageQuestions = questionBank.filter(q => q.type === 'image' && q.media);
     
-    if (imageQuestions.length === 0) {
-        preloadComplete = true;
-        return;
-    }
+//     if (imageQuestions.length === 0) {
+//         preloadComplete = true;
+//         return;
+//     }
     
-    // 创建加载指示器
-    const loadingIndicatorEl = document.createElement('div');
-    loadingIndicatorEl.id = 'loading-indicator';
-    loadingIndicatorEl.textContent = '加载资源中...';
-    loadingIndicatorEl.style.position = 'fixed';
-    loadingIndicatorEl.style.top = '50%';
-    loadingIndicatorEl.style.left = '50%';
-    loadingIndicatorEl.style.transform = 'translate(-50%, -50%)';
-    loadingIndicatorEl.style.fontSize = '18px';
-    loadingIndicatorEl.style.zIndex = '1000';
-    document.body.appendChild(loadingIndicatorEl);
+//     // 创建加载指示器
+//     const loadingIndicatorEl = document.createElement('div');
+//     loadingIndicatorEl.id = 'loading-indicator';
+//     loadingIndicatorEl.textContent = '加载资源中...';
+//     loadingIndicatorEl.style.position = 'fixed';
+//     loadingIndicatorEl.style.top = '50%';
+//     loadingIndicatorEl.style.left = '50%';
+//     loadingIndicatorEl.style.transform = 'translate(-50%, -50%)';
+//     loadingIndicatorEl.style.fontSize = '18px';
+//     loadingIndicatorEl.style.zIndex = '1000';
+//     document.body.appendChild(loadingIndicatorEl);
     
-    imageQuestions.forEach(q => {
-        const img = new Image();
-        img.onload = () => {
-            // 图片加载成功，存入缓存
-            imageCache[q.media] = img;
-            loadedCount++;
+//     imageQuestions.forEach(q => {
+//         const img = new Image();
+//         img.onload = () => {
+//             // 图片加载成功，存入缓存
+//             imageCache[q.media] = img;
+//             loadedCount++;
             
-            // 更新加载进度
-            loadingIndicatorEl.textContent = `加载资源中... ${loadedCount}/${imageQuestions.length}`;
+//             // 更新加载进度
+//             loadingIndicatorEl.textContent = `加载资源中... ${loadedCount}/${imageQuestions.length}`;
             
-            if (loadedCount === imageQuestions.length) {
-                preloadComplete = true;
-                // 隐藏加载指示器
-                loadingIndicatorEl.style.display = 'none';
-                console.log('所有图片预加载完成');
-            }
-        };
+//             if (loadedCount === imageQuestions.length) {
+//                 preloadComplete = true;
+//                 // 隐藏加载指示器
+//                 loadingIndicatorEl.style.display = 'none';
+//                 console.log('所有图片预加载完成');
+//             }
+//         };
         
-        img.onerror = () => {
-            console.error(`图片加载失败: ${q.media}`);
-            loadedCount++;
+//         img.onerror = () => {
+//             console.error(`图片加载失败: ${q.media}`);
+//             loadedCount++;
             
-            // 即使加载失败也继续
-            loadingIndicatorEl.textContent = `加载资源中... ${loadedCount}/${imageQuestions.length}`;
+//             // 即使加载失败也继续
+//             loadingIndicatorEl.textContent = `加载资源中... ${loadedCount}/${imageQuestions.length}`;
             
-            if (loadedCount === imageQuestions.length) {
-                preloadComplete = true;
-                loadingIndicatorEl.style.display = 'none';
-            }
-        };
+//             if (loadedCount === imageQuestions.length) {
+//                 preloadComplete = true;
+//                 loadingIndicatorEl.style.display = 'none';
+//             }
+//         };
         
-        // 开始加载图片
-        img.src = q.media;
-    });
-}
+//         // 开始加载图片
+//         img.src = q.media;
+//     });
+// }
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
-    // 页面加载完成后预加载图片
-    preloadImages();
-    
     // 确保设置事件监听器和加载排行榜
     setupEventListeners();
     // Initialize global leaderboard
@@ -191,6 +188,19 @@ function getRandomQuestions(count) {
         
         // 如果该类型题目不足，尽可能选择所有可用的
         const actualTypeCount = Math.min(typeCount, typeQuestions.length);
+        
+        // 如果需要的题目数量很少（<=3），则不进行难度区分，直接随机抽取
+        // 这样可以避免因为取整导致某些难度的题目永远无法被选中（特别是只选1题的情况）
+        if (actualTypeCount <= 3) {
+            const shuffled = [...typeQuestions].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, actualTypeCount);
+            
+            selected.forEach(q => {
+                selectedQuestions.push(q);
+                usedIds.add(q.id);
+            });
+            return;
+        }
         
         // 按难度比例从该类型中选择题目
         const difficultyCounts = {
